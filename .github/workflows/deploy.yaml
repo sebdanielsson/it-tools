@@ -68,12 +68,15 @@ jobs:
             [ -z "${!name}" ] && missing="$missing $name"
           done
           if [ -n "$missing" ]; then
-            echo "::error::Missing repository secrets:$missing — see .github/workflows/deploy.yaml"
+            # VERCEL_TOKEN lives on the Production and Preview environments; the two ids are
+            # repository secrets. Say which is which, so the fix is not hunted for in the
+            # wrong settings page.
+            echo "::error::Missing credentials:$missing — VERCEL_TOKEN is set per environment (Settings > Environments), VERCEL_ORG_ID and VERCEL_PROJECT_ID are repository secrets. See .github/workflows/deploy.yaml"
             exit 1
           fi
 
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.0
         with:
           # On pull requests, the exact commit that triggered the run, not GitHub's detached
           # merge commit: this builds the PR's own head, as Vercel's Git integration did.
@@ -93,7 +96,7 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
         run: git checkout -B "$HEAD_REF"
 
-      - uses: pnpm/setup@v2
+      - uses: pnpm/setup@v2.0.2
         with:
           cache: true
 
