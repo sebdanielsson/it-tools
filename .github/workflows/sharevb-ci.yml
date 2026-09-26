@@ -6,28 +6,37 @@ on:
     branches:
       - chore/all-my-stuffs
 
+concurrency:
+  # A new push supersedes the previous run on the same ref, so a burst of pushes
+  # costs one run instead of one per push.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04-arm
 
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup pnpm and install dependencies
-        uses: pnpm/setup@v2.0.2
+        uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
         with:
           cache: true
 
-      - name: Check formatting
-        run: pnpm fmt:check
+      # The checks are independent of each other, so they share the runner
+      # instead of queueing behind one another. The build is the long pole.
+      - parallel:
+          - name: Check formatting
+            run: pnpm fmt:check
 
-      - name: Run linters
-        run: pnpm lint
+          - name: Run linters
+            run: pnpm lint
 
-      - name: Run unit test
-        run: pnpm test:unit
+          - name: Run unit test
+            run: pnpm test:unit
 
-      - name: Type check
-        run: pnpm typecheck
+          - name: Type check
+            run: pnpm typecheck
 
-      - name: Build the app
-        run: pnpm build
+          - name: Build the app
+            run: pnpm build
