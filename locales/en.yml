@@ -2697,6 +2697,7 @@ tools:
       title-schema-validation-errors: Schema Validation Errors
       label-indent-size-0-compact: 'Indent size (0 = Compact):'
       repair-json: Repair JSON
+      label-auto-height: Auto Height
     externalAccess: >-
       This tool may download a JSON schema from https://www.schemastore.org when
       validation is requested. No data is send externally.
