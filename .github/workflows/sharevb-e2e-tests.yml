@@ -39,7 +39,9 @@ jobs:
     needs: build
     name: test (${{ matrix.browser }})
     timeout-minutes: 120
-    runs-on: ubuntu-26.04-arm
+    # x64 on purpose: on ubuntu-26.04-arm the Playwright suite ran over 7x slower
+    # (chromium still going after 27 minutes, against under 4 here).
+    runs-on: ubuntu-26.04
     strategy:
       # Always report every browser, rather than cancelling the rest on the
       # first failure.
