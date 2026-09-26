@@ -82,6 +82,11 @@ export default defineConfig({
       command: 'pnpm preview',
       url: previewUrl,
       reuseExistingServer: !isCI,
+      // pnpm 12 runs the script in its own process group, so Playwright's
+      // default SIGKILL to the `pnpm preview` group misses vite: it survives,
+      // holds the output pipes open, and the run never exits. pnpm forwards
+      // SIGTERM to the script, so stop it that way.
+      gracefulShutdown: { signal: 'SIGTERM', timeout: 5_000 },
     },
   }),
 });
