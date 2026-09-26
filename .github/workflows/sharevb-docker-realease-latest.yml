@@ -13,6 +13,14 @@ on:
     branches:
       - chore/all-my-stuffs
 
+concurrency:
+  # One publish at a time, newest wins: without this, an older run that finishes
+  # last would overwrite the tags with an older commit. ci cancels its own
+  # superseded runs, so these runs arrive in commit order and cancelling the
+  # older one always leaves the newest commit published.
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   build:
     # Only a successful ci run for a push; a pull request's run must never publish.
