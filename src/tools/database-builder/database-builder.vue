@@ -19,6 +19,16 @@ function generateRandomPassword(length = 12) {
   return multiRandFromArray([...chars], length).join('');
 }
 
+// Quote user input so a quote, backtick or bracket cannot end the literal or identifier early
+const sqlString = (value: string) => `'${value.replace(/'/g, "''")}'`;
+const mysqlString = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
+const mysqlIdentifier = (value: string) => `\`${value.replace(/`/g, '``')}\``;
+const pgIdentifier = (value: string) => `"${value.replace(/"/g, '""')}"`;
+const sqlServerIdentifier = (value: string) => `[${value.replace(/]/g, ']]')}]`;
+// Oracle quoted identifiers cannot contain `"`, and quoting makes them case-sensitive, so plain names stay unquoted
+const oracleIdentifier = (value: string) => (/^[A-Za-z][\w$#]*$/.test(value) ? value : `"${value.replace(/"/g, '')}"`);
+const sqlComment = (value: string) => value.replace(/[\r\n]+/g, ' ');
+
 function generateSQL() {
   const pwd = password.value || generateRandomPassword();
   const perms = permissions.value.length > 0 ? permissions.value.join(', ') : 'ALL PRIVILEGES';
@@ -28,44 +38,44 @@ function generateSQL() {
   switch (dbType.value) {
     case 'mysql':
       sql = `
-CREATE DATABASE IF NOT EXISTS \`${dbName.value}\`;
-CREATE USER IF NOT EXISTS '${account.value}'@'${serverAddress.value || '%'}' IDENTIFIED BY '${pwd}';
-GRANT ${perms} ON \`${dbName.value}\`.* TO '${account.value}'@'${serverAddress.value || '%'}';
+CREATE DATABASE IF NOT EXISTS ${mysqlIdentifier(dbName.value)};
+CREATE USER IF NOT EXISTS ${mysqlString(account.value)}@${mysqlString(serverAddress.value || '%')} IDENTIFIED BY ${mysqlString(pwd)};
+GRANT ${perms} ON ${mysqlIdentifier(dbName.value)}.* TO ${mysqlString(account.value)}@${mysqlString(serverAddress.value || '%')};
 FLUSH PRIVILEGES;
       `.trim();
       break;
 
     case 'postgresql':
       sql = `
-CREATE DATABASE "${dbName.value}";
-CREATE ROLE "${account.value}" LOGIN PASSWORD '${pwd}';
-GRANT ${perms} ON DATABASE "${dbName.value}" TO "${account.value}";
+CREATE DATABASE ${pgIdentifier(dbName.value)};
+CREATE ROLE ${pgIdentifier(account.value)} LOGIN PASSWORD ${sqlString(pwd)};
+GRANT ${perms} ON DATABASE ${pgIdentifier(dbName.value)} TO ${pgIdentifier(account.value)};
       `.trim();
       break;
 
     case 'sqlserver':
       sql = `
-CREATE DATABASE [${dbName.value}];
-CREATE LOGIN [${account.value}] WITH PASSWORD = '${pwd}';
-USE [${dbName.value}];
-CREATE USER [${account.value}] FOR LOGIN [${account.value}];
-GRANT ${perms} TO [${account.value}];
+CREATE DATABASE ${sqlServerIdentifier(dbName.value)};
+CREATE LOGIN ${sqlServerIdentifier(account.value)} WITH PASSWORD = ${sqlString(pwd)};
+USE ${sqlServerIdentifier(dbName.value)};
+CREATE USER ${sqlServerIdentifier(account.value)} FOR LOGIN ${sqlServerIdentifier(account.value)};
+GRANT ${perms} TO ${sqlServerIdentifier(account.value)};
       `.trim();
       break;
 
     case 'oracle':
       sql = `
-CREATE USER ${account.value} IDENTIFIED BY "${pwd}";
-GRANT ${perms} TO ${account.value};
+CREATE USER ${oracleIdentifier(account.value)} IDENTIFIED BY "${pwd}";
+GRANT ${perms} TO ${oracleIdentifier(account.value)};
 -- Oracle typically uses schemas; adjust database creation as needed
--- for quota, you may want: ALTER USER ${account.value} QUOTA UNLIMITED ON USERS;
+-- for quota, you may want: ALTER USER ${sqlComment(oracleIdentifier(account.value))} QUOTA UNLIMITED ON USERS;
       `.trim();
       break;
 
     case 'sqlite':
       sql = `
 -- SQLite does not support user management or GRANT statements.
--- Database is created as a file: ${dbName.value}.db
+-- Database is created as a file: ${sqlComment(dbName.value)}.db
 -- Permissions are handled at the OS/file system level.
       `.trim();
       break;
