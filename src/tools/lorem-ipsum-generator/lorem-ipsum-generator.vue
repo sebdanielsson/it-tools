@@ -6,6 +6,7 @@ import { computedRefreshable } from '@/composable/computedRefreshable';
 import { useCopy } from '@/composable/copy';
 import { useQueryParamOrStorage } from '@/composable/queryParams';
 import { randIntFromInterval } from '@/utils/random';
+import { clamp } from '@/modules/shared/number.models';
 
 const { t } = useI18n();
 
@@ -16,13 +17,17 @@ const startWithLoremIpsum = ref(true);
 const asHTML = useQueryParamOrStorage({ name: 'html', storageName: 'lorem:html', defaultValue: false });
 const language = useQueryParamOrStorage({ defaultValue: 'English', storageName: 'lorem:lang', name: 'lang' });
 
+const randIntFromSliderRange = ([min, max]: number[]) =>
+  randIntFromInterval(clamp({ value: min, min: 1, max: 50 }), clamp({ value: max, min: 1, max: 50 }));
+
 const supportedLanguages = getSupportedLanguages();
 const [loremIpsumText, refreshLoremIpsum] = computedRefreshable(() =>
   generateLoremIpsum({
-    paragraphCount: paragraphs.value,
+    // URL params are not bounded by the sliders, so clamp them to the slider ranges to keep huge values from freezing the page
+    paragraphCount: clamp({ value: paragraphs.value, min: 1, max: 20 }),
     asHTML: asHTML.value,
-    sentencePerParagraph: randIntFromInterval(sentences.value[0], sentences.value[1]),
-    wordCount: randIntFromInterval(words.value[0], words.value[1]),
+    sentencePerParagraph: randIntFromSliderRange(sentences.value),
+    wordCount: randIntFromSliderRange(words.value),
     startWithLoremIpsum: startWithLoremIpsum.value,
     language: language.value,
   }),

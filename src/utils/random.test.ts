@@ -27,6 +27,7 @@ describe('random', () => {
     expect([...seen].sort((a, b) => a - b)).toEqual([0, 1, 2]);
     expect(() => randIndex(0)).toThrow(RangeError);
     expect(() => randIndex(1.5)).toThrow(RangeError);
+    expect(() => randIndex(2 ** 53 + 2)).toThrow(RangeError);
   });
 
   it('randIntFromInterval() includes both bounds', () => {
@@ -41,6 +42,21 @@ describe('random', () => {
     expect([...fractional].sort((a, b) => a - b)).toEqual([3, 4]);
     expect(randIntFromInterval(2.2, 2.8)).toBe(3);
     expect(randIntFromInterval(Number.NaN, 4)).toBeNaN();
+  });
+
+  it('randIntFromInterval() handles ranges wider than 2^32', () => {
+    for (const [min, max] of [
+      [1, 2 ** 32 + 1],
+      [-(2 ** 52), 2 ** 52],
+      [-Number.MAX_VALUE, Number.MAX_VALUE],
+    ]) {
+      const value = randIntFromInterval(min, max);
+      expect(Number.isInteger(value)).toBe(true);
+      expect(value).toBeGreaterThanOrEqual(min);
+      expect(value).toBeLessThanOrEqual(max);
+    }
+    const aboveUint32 = Array.from({ length: 200 }, () => randIntFromInterval(0, 2 ** 40));
+    expect(aboveUint32.some((value) => value > 2 ** 32)).toBe(true);
   });
 
   it('randFromArray() returns undefined for an empty array', () => {
