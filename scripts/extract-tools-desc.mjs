@@ -13,7 +13,11 @@ if (fs.existsSync(localesFile)) {
 
 // Single-quoted JS string that may contain escaped quotes. `[^'\\]|\\.` cannot overlap, so it cannot backtrack exponentially.
 const quotedValue = (key) => new RegExp(`\\b${key}: '((?:[^'\\\\]|\\\\.)*)'`);
-const unescapeValue = (value) => value.replace(/\\(.)/g, '$1');
+// Decode JS string escapes (\n, \x27, \u00e9, \u{1F600}, \') the way the JS parser would
+const JS_ESCAPES = { n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', v: '\v', 0: '\0' };
+const unescapeValue = (value) =>
+  value.replace(/\\(?:u\{([\da-fA-F]+)\}|u([\da-fA-F]{4})|x([\da-fA-F]{2})|(.))/g, (_, codePoint, u4, x2, char) =>
+    char === undefined ? String.fromCodePoint(Number.parseInt(codePoint ?? u4 ?? x2, 16)) : (JS_ESCAPES[char] ?? char));
 
 function processFile(filePath) {
   const parentDir = path.basename(path.dirname(filePath)); // Get parent directory name
