@@ -8255,6 +8255,7 @@ tools:
       tag-replication-client: REPLICATION CLIENT
       tag-replication-slave: REPLICATION SLAVE
       tag-generate-sql-instructions: Generate SQL Instructions
+      error-oracle-password-double-quote: Oracle passwords cannot contain double quotes (")
   database-table-generator:
     title: Database Table Generator
     description: Generate SQL CREATE TABLE for common databases

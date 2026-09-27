@@ -14,6 +14,13 @@ const password = ref('');
 const permissions = ref<string[]>([]);
 const sqlOutput = ref('');
 
+// Oracle passwords cannot contain `"` and there is no way to escape it inside the quoted password
+const passwordError = computed(() =>
+  dbType.value === 'oracle' && password.value.includes('"')
+    ? t('tools.database-builder.texts.error-oracle-password-double-quote')
+    : undefined,
+);
+
 function generateRandomPassword(length = 12) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
   return multiRandFromArray([...chars], length).join('');
@@ -30,6 +37,10 @@ const oracleIdentifier = (value: string) => (/^[A-Za-z][\w$#]*$/.test(value) ? v
 const sqlComment = (value: string) => value.replace(/[\r\n]+/g, ' ');
 
 function generateSQL() {
+  if (passwordError.value) {
+    sqlOutput.value = '';
+    return;
+  }
   const pwd = password.value || generateRandomPassword();
   const perms = permissions.value.length > 0 ? permissions.value.join(', ') : 'ALL PRIVILEGES';
 
@@ -113,7 +124,12 @@ GRANT ${perms} TO ${oracleIdentifier(account.value)};
         <NInput v-model:value="account" :placeholder="t('tools.database-builder.texts.placeholder-test')" />
       </NFormItem>
 
-      <NFormItem :label="t('tools.database-builder.texts.label-password-leave-empty-to-generate')" label-width="auto">
+      <NFormItem
+        :label="t('tools.database-builder.texts.label-password-leave-empty-to-generate')"
+        label-width="auto"
+        :feedback="passwordError"
+        :validation-status="passwordError ? 'error' : undefined"
+      >
         <NInput
           v-model:value="password"
           type="password"
