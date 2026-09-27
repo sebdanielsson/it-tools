@@ -34,6 +34,15 @@ describe('random', () => {
     expect([...seen].sort((a, b) => a - b)).toEqual([5, 6, 7]);
   });
 
+  it('randIntFromInterval() accepts reversed and fractional bounds', () => {
+    const reversed = new Set(Array.from({ length: 1000 }, () => randIntFromInterval(8, 3)));
+    expect([...reversed].sort((a, b) => a - b)).toEqual([3, 4, 5, 6, 7, 8]);
+    const fractional = new Set(Array.from({ length: 1000 }, () => randIntFromInterval(2.5, 4)));
+    expect([...fractional].sort((a, b) => a - b)).toEqual([3, 4]);
+    expect(randIntFromInterval(2.2, 2.8)).toBe(3);
+    expect(randIntFromInterval(Number.NaN, 4)).toBeNaN();
+  });
+
   it('randFromArray() returns undefined for an empty array', () => {
     expect(randFromArray([])).toBeUndefined();
     expect(randFromArray(['a'])).toBe('a');

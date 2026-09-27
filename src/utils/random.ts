@@ -32,8 +32,16 @@ const randFromArray = <T>(array: T[]): T | undefined => (array.length > 0 ? arra
 
 const multiRandFromArray = <T>(array: T[], length: number) => Array.from({ length }, () => randFromArray(array));
 
-// Integer in [min, max], both bounds included
-const randIntFromInterval = (min: number, max: number) => min + randIndex(max - min + 1);
+// Integer in [min, max], both bounds included. Bounds can come from URL params, so reversed or fractional ones are
+// normalised instead of throwing.
+function randIntFromInterval(min: number, max: number): number {
+  const low = Math.ceil(Math.min(min, max));
+  const high = Math.floor(Math.max(min, max));
+  if (!Number.isFinite(low) || !Number.isFinite(high)) {
+    return Number.NaN;
+  }
+  return high < low ? low : low + randIndex(high - low + 1);
+}
 
 // Durstenfeld shuffle
 function shuffleArrayMutate<T>(array: T[]): T[] {
