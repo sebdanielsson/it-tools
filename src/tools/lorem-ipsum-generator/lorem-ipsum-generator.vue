@@ -10,24 +10,35 @@ import { clamp } from '@/modules/shared/number.models';
 
 const { t } = useI18n();
 
+const defaultSentences = [3, 8];
+const defaultWords = [8, 15];
 const paragraphs = useQueryParamOrStorage({ name: 'paragraphs', storageName: 'lorem:paragraphs', defaultValue: 1 });
-const sentences = useQueryParamOrStorage({ name: 'sentences', storageName: 'lorem:sentences', defaultValue: [3, 8] });
-const words = useQueryParamOrStorage({ name: 'words', storageName: 'lorem:words', defaultValue: [8, 15] });
+const sentences = useQueryParamOrStorage({
+  name: 'sentences',
+  storageName: 'lorem:sentences',
+  defaultValue: defaultSentences,
+});
+const words = useQueryParamOrStorage({ name: 'words', storageName: 'lorem:words', defaultValue: defaultWords });
 const startWithLoremIpsum = ref(true);
 const asHTML = useQueryParamOrStorage({ name: 'html', storageName: 'lorem:html', defaultValue: false });
 const language = useQueryParamOrStorage({ defaultValue: 'English', storageName: 'lorem:lang', name: 'lang' });
 
-const randIntFromSliderRange = ([min, max]: number[]) =>
-  randIntFromInterval(clamp({ value: min, min: 1, max: 50 }), clamp({ value: max, min: 1, max: 50 }));
+// URL params are neither type-checked nor bounded by the sliders: fall back to the default when the value has the wrong
+// shape, and clamp it to the slider range so huge values cannot freeze the page
+const sliderValue = (value: unknown, fallback: number, max: number) =>
+  typeof value === 'number' && Number.isFinite(value) ? clamp({ value, min: 1, max }) : fallback;
+const randIntFromSliderRange = (range: unknown, [defaultMin, defaultMax]: number[]) => {
+  const [min, max] = Array.isArray(range) ? range : [];
+  return randIntFromInterval(sliderValue(min, defaultMin, 50), sliderValue(max, defaultMax, 50));
+};
 
 const supportedLanguages = getSupportedLanguages();
 const [loremIpsumText, refreshLoremIpsum] = computedRefreshable(() =>
   generateLoremIpsum({
-    // URL params are not bounded by the sliders, so clamp them to the slider ranges to keep huge values from freezing the page
-    paragraphCount: clamp({ value: paragraphs.value, min: 1, max: 20 }),
+    paragraphCount: sliderValue(paragraphs.value, 1, 20),
     asHTML: asHTML.value,
-    sentencePerParagraph: randIntFromSliderRange(sentences.value),
-    wordCount: randIntFromSliderRange(words.value),
+    sentencePerParagraph: randIntFromSliderRange(sentences.value, defaultSentences),
+    wordCount: randIntFromSliderRange(words.value, defaultWords),
     startWithLoremIpsum: startWithLoremIpsum.value,
     language: language.value,
   }),
