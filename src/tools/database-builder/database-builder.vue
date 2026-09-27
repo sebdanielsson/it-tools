@@ -14,7 +14,12 @@ const password = ref('');
 const permissions = ref<string[]>([]);
 const sqlOutput = ref('');
 
-// Oracle passwords cannot contain `"` and there is no way to escape it inside the quoted password
+// Oracle quoted identifiers and passwords cannot contain `"`, and there is no way to escape it
+const accountError = computed(() =>
+  dbType.value === 'oracle' && account.value.includes('"')
+    ? t('tools.database-builder.texts.error-oracle-account-double-quote')
+    : undefined,
+);
 const passwordError = computed(() =>
   dbType.value === 'oracle' && password.value.includes('"')
     ? t('tools.database-builder.texts.error-oracle-password-double-quote')
@@ -35,12 +40,12 @@ const mysqlString = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(
 const mysqlIdentifier = (value: string) => `\`${value.replace(/`/g, '``')}\``;
 const pgIdentifier = (value: string) => `"${value.replace(/"/g, '""')}"`;
 const sqlServerIdentifier = (value: string) => `[${value.replace(/]/g, ']]')}]`;
-// Oracle quoted identifiers cannot contain `"`, and quoting makes them case-sensitive, so plain names stay unquoted
-const oracleIdentifier = (value: string) => (/^[A-Za-z][\w$#]*$/.test(value) ? value : `"${value.replace(/"/g, '')}"`);
+// Quoting makes Oracle names case-sensitive, so plain names stay unquoted (names with `"` are rejected by accountError)
+const oracleIdentifier = (value: string) => (/^[A-Za-z][\w$#]*$/.test(value) ? value : `"${value}"`);
 const sqlComment = (value: string) => value.replace(/[\r\n]+/g, ' ');
 
 function generateSQL() {
-  if (passwordError.value) {
+  if (accountError.value || passwordError.value) {
     sqlOutput.value = '';
     return;
   }
@@ -123,7 +128,11 @@ GRANT ${perms} TO ${oracleIdentifier(account.value)};
         <NInput v-model:value="serverAddress" :placeholder="t('tools.database-builder.texts.placeholder-127-0-0-1')" />
       </NFormItem>
 
-      <NFormItem :label="t('tools.database-builder.texts.label-account')">
+      <NFormItem
+        :label="t('tools.database-builder.texts.label-account')"
+        :feedback="accountError"
+        :validation-status="accountError ? 'error' : undefined"
+      >
         <NInput v-model:value="account" :placeholder="t('tools.database-builder.texts.placeholder-test')" />
       </NFormItem>
 
