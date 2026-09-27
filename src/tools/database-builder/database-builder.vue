@@ -28,6 +28,9 @@ function generateRandomPassword(length = 12) {
 
 // Quote user input so a quote, backtick or bracket cannot end the literal or identifier early
 const sqlString = (value: string) => `'${value.replace(/'/g, "''")}'`;
+// E'' treats backslashes as escapes whatever standard_conforming_strings is set to
+const pgString = (value: string) =>
+  value.includes('\\') ? `E'${value.replace(/\\/g, '\\\\').replace(/'/g, "''")}'` : sqlString(value);
 const mysqlString = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
 const mysqlIdentifier = (value: string) => `\`${value.replace(/`/g, '``')}\``;
 const pgIdentifier = (value: string) => `"${value.replace(/"/g, '""')}"`;
@@ -59,7 +62,7 @@ FLUSH PRIVILEGES;
     case 'postgresql':
       sql = `
 CREATE DATABASE ${pgIdentifier(dbName.value)};
-CREATE ROLE ${pgIdentifier(account.value)} LOGIN PASSWORD ${sqlString(pwd)};
+CREATE ROLE ${pgIdentifier(account.value)} LOGIN PASSWORD ${pgString(pwd)};
 GRANT ${perms} ON DATABASE ${pgIdentifier(dbName.value)} TO ${pgIdentifier(account.value)};
       `.trim();
       break;
