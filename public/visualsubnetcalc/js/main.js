@@ -1265,6 +1265,7 @@ function addRowTree(subnetTree, depth, maxDepth, operatingMode) {
 
 function addRow(network, netSize, colspan, note, notesWidth, color, operatingMode) {
     // The subnet map can come from a shareable URL or an imported config, so escape everything that lands in HTML
+    const rawNetwork = network
     network = escapeHtml(network)
     note = escapeHtml(note)
     if (!/^#[0-9a-f]{3,8}$/i.test(color)) {
@@ -1323,10 +1324,10 @@ function addRow(network, netSize, colspan, note, notesWidth, color, operatingMod
         // DONE: If the subnet address (without the mask) matches a larger subnet address
         // in the heirarchy that is a signal to add more join buttons to that row, since they start at the top row and
         // via rowspan extend downward.
-        let matchingNetworkList = get_matching_network_list(network, subnetMap).slice(1)
+        let matchingNetworkList = get_matching_network_list(rawNetwork, subnetMap).slice(1)
         for (const i in matchingNetworkList) {
-            let matchingNetwork = matchingNetworkList[i]
-            let networkChildrenCount = count_network_children(matchingNetwork, subnetMap, [])
+            let networkChildrenCount = count_network_children(matchingNetworkList[i], subnetMap, [])
+            let matchingNetwork = escapeHtml(matchingNetworkList[i])
             newRow += '                <td aria-label="' + matchingNetwork + ' Join" rowspan="' + networkChildrenCount + '" colspan="1" class="join rotate" data-subnet="' + matchingNetwork + '" data-mutate-verb="join"><span>/' + matchingNetwork.split('/')[1] + '</span></td>\n'
         }
     }
